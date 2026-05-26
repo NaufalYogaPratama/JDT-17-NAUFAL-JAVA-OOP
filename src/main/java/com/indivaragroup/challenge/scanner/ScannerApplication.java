@@ -9,7 +9,7 @@ import com.indivaragroup.challenge.scanner.exception.InvalidShoppingException;
 import java.util.InputMismatchException;
 
 public class ScannerApplication {
-    public static void ShoppingService() {
+    public static void shoppingService() {
 
         Scanner scanner = new Scanner(System.in);
 
@@ -17,6 +17,8 @@ public class ScannerApplication {
 
         try {
             boolean running = true;
+
+            int itemCount = 0;
 
             while (running) {
                 System.out.print("Enter Item Name: ");
@@ -42,13 +44,22 @@ public class ScannerApplication {
 
                 shoppingList.add(shoppingData);
 
-                System.out.print("Tambahkan Item? (y/n): ");
-                String choice = scanner.nextLine().trim().toLowerCase();
+                itemCount++;
 
-                if (choice.equals("n")) {
+                if (itemCount == 3) {
+                    System.out.println("=================================================");
+                    System.out.println("             Maksimal Order 3 Kali!              ");
+                    System.out.println("=================================================");
                     running = false;
+                } else {
+                    System.out.print("Tambahkan Item? (y/n): ");
+                    String choice = scanner.nextLine().trim().toLowerCase();
+
+                    if (choice.equals("n") || choice.equals("no")) {
+                        running = false;
+                    }
+                    System.out.println("-------------------------------------------------");
                 }
-                System.out.println("-------------------------------------------------");
             }
 
             printReceipt(shoppingList);
@@ -103,6 +114,6 @@ public class ScannerApplication {
 
 
     public static void main(String[] args) {
-        ShoppingService();
+        shoppingService();
     }
 }
