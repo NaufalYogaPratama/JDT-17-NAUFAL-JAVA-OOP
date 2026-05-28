@@ -1,19 +1,17 @@
 package com.indivaragroup.challenge.scanner;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 import com.indivaragroup.challenge.scanner.dto.ShoppingDTO;
 import com.indivaragroup.challenge.scanner.exception.InvalidShoppingException;
-import java.util.InputMismatchException;
+
 
 public class ScannerApplication {
     public static void shoppingService() {
 
         Scanner scanner = new Scanner(System.in);
 
-        List<ShoppingDTO> shoppingList = new ArrayList<>();
+        ShoppingDTO[] shoppingArray = new ShoppingDTO[3];
 
         try {
             boolean running = true;
@@ -23,16 +21,17 @@ public class ScannerApplication {
             while (running) {
                 System.out.print("Enter Item Name: ");
                 String item = scanner.nextLine();
+                ShoppingValidator.validateItemName((Object) item);
 
                 System.out.print("Enter Qty: ");
-                int quantity = scanner.nextInt();
-                ShoppingValidator.validateQuantity(quantity); // Validasi Qty
+                String qtyInput = scanner.nextLine();
+                ShoppingValidator.validateQuantityRegex(qtyInput);
+                int quantity = Integer.parseInt(qtyInput);
 
                 System.out.print("Enter Price: ");
-                double price = scanner.nextDouble();
-                ShoppingValidator.validatePrice(price);       // Validasi Price
-
-                scanner.nextLine();
+                String priceInput = scanner.nextLine();
+                ShoppingValidator.validatePriceRegex(priceInput);
+                double price = Double.parseDouble(priceInput);
 
                 double subTotal = quantity * price;
 
@@ -42,7 +41,7 @@ public class ScannerApplication {
                 shoppingData.setPrice(price);
                 shoppingData.setSubTotal(subTotal);
 
-                shoppingList.add(shoppingData);
+                shoppingArray[itemCount] = shoppingData;
 
                 itemCount++;
 
@@ -62,7 +61,8 @@ public class ScannerApplication {
                 }
             }
 
-            printReceipt(shoppingList);
+            ShoppingDTO[] filledArray = Arrays.copyOf(shoppingArray, itemCount);
+            printReceipt(filledArray);
 
         } catch (InvalidShoppingException e) {
             System.out.println("\n" + e.getMessage());
@@ -75,40 +75,51 @@ public class ScannerApplication {
         }
     }
 
-    public static void printReceipt(List<ShoppingDTO> list) {
+    public static void printReceipt(ShoppingDTO[] array) {
         StringBuilder receipt = new StringBuilder();
 
+        Properties properties = new Properties();
+        properties.setProperty("store.name", "Seven Eleven");
+        properties.setProperty("cashier.name", "Naufal");
+
+        String receiptId = UUID.randomUUID().toString();
+
         receipt.append("\n=================================================\n");
-        receipt.append("--------------------RECEIPT----------------------\n");
+        receipt.append(String.format("Store   : %s\n", properties.getProperty("store.name")));
+        receipt.append(String.format("Cashier : %s\n", properties.getProperty("cashier.name")));
+        receipt.append(String.format("Receipt : %s\n", receiptId));
         receipt.append("=================================================\n");
 
-        receipt.append(String.format("%-15s | %-5s | %-10s | %-10s\n", "Item", "Qty", "Price", "Subtotal"));
-        receipt.append("-------------------------------------------------\n");
+        Arrays.sort(array, Comparator.comparing(ShoppingDTO::getItem));
 
-        int totalItem = 0;
         double totalSubTotal = 0;
 
-        for (ShoppingDTO data : list) {
-            receipt.append(String.format("%-15s | %-5d | %-10.2f | %-10.2f\n",
+        for (ShoppingDTO data : array) {
+            receipt.append(String.format("%s x %d = %.0f\n",
                     data.getItem(),
                     data.getQuantity(),
-                    data.getPrice(),
                     data.getSubTotal()));
 
-            totalItem += data.getQuantity();
             totalSubTotal += data.getSubTotal();
         }
 
-        double tax = totalSubTotal * 0.10;
-        double grandTotal = totalSubTotal + tax;
+        Random random = new Random();
+        int taxPercentage = random.nextInt(21);
+        double taxAmount = totalSubTotal * taxPercentage / 100;
+        double grandTotal = taxAmount + totalSubTotal;
 
         receipt.append("-------------------------------------------------\n");
-        receipt.append(String.format("%37s: %-10d\n", "Total Item", totalItem));
-        receipt.append(String.format("%37s: %-10.2f\n", "Tax (10%)", tax));
-        receipt.append(String.format("%37s: %-10.2f\n", "Total", grandTotal));
+        receipt.append(String.format("%-12s : %d%% = %.2f\n", "Tax", taxPercentage, taxAmount));
+        receipt.append(String.format("%-10s : %.2f\n", "Grand Total", grandTotal));
         receipt.append("=================================================\n");
 
-        System.out.println(receipt);
+        String finalReceipt = receipt.toString();
+
+        String encode = Base64.getEncoder().encodeToString(finalReceipt.getBytes());
+
+        System.out.println(finalReceipt);
+
+        System.out.println("ENCODED RECEIPT = " + encode);
     }
 
 
